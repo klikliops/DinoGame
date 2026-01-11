@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dinosaur Spelling Bee</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; margin-top: 30px; }
+  input, button { font-size: 16px; padding: 5px; margin: 5px; }
+  .feedback { font-weight: bold; margin-top: 10px; min-height: 24px; }
+</style>
+</head>
+<body>
+<!-- BACKGROUND FOREST -->
+<div class="forest">
+  <div class="trees back"></div>
+  <div class="trees front"></div>
+
+  <!-- WALKING DINOS -->
+  <img src="dino-walk-1.png" class="dino walk-left" alt="">
+  <img src="dino-walk-2.png" class="dino walk-right" alt="">
+</div>
+
+<h1>Dinosaur Spelling Bee</h1>
+
+<p id="timer">Time left: 20s</p>
+<p id="score">Score: 0</p>
+
+<p id="dinoPrompt">Spell the dinosaur you hear:</p>
+<input type="text" id="userInput" />
+<br>
+<button onclick="checkAnswer()">Submit</button>
+<button onclick="revealAnswer()">Reveal Answer</button>
+<button onclick="repeatDino()">Repeat</button>
+<button id="nextButton" onclick="nextDino()" disabled>Next</button>
+
+<p class="feedback" id="feedback"></p>
+
+<script>
+const dinosaurs = [
+  "tyrannosaurus", "stegosaurus", "triceratops", "brachiosaurus", "velociraptor",
+  "diplodocus", "ankylosaurus", "allosaurus", "iguanodon", "parasaurolophus",
+  "pachycephalosaurus", "corythosaurus", "compsognathus", "spinosaurus",
+  "dilophosaurus", "ouranosaurus", "kentrosaurus", "gallimimus", "edmontosaurus",
+  "majungasaurus", "therizinosaurus", "monolophosaurus", "carcharodontosaurus",
+  "micropachycephalosaurus", "rapetosaurus", "gigantoraptor", "lambeosaurus",
+  "shantungosaurus", "sauroposeidon", "baryonyx"
+];
+
+let currentDinoIndex = 0;
+let score = 0;
+let timer = 20;
+let wordTimerInterval = null;
+
+const inputEl = document.getElementById('userInput');
+const feedbackEl = document.getElementById('feedback');
+const scoreEl = document.getElementById('score');
+const timerEl = document.getElementById('timer');
+const nextButton = document.getElementById('nextButton');
+
+function speak(text, callback) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.onend = () => {
+    if(callback) callback();
+  };
+  speechSynthesis.speak(utterance);
+}
+
+function startWordTimer() {
+  clearInterval(wordTimerInterval);
+  timer = 20;
+  timerEl.textContent = `Time left: ${timer}s`;
+  wordTimerInterval = setInterval(() => {
+    timer--;
+    timerEl.textContent = `Time left: ${timer}s`;
+    if(timer <= 0) {
+      clearInterval(wordTimerInterval);
+      feedbackEl.textContent = `⏰ Time's up! The correct word was: ${dinosaurs[currentDinoIndex]}`;
+      score -= 5;
+      scoreEl.textContent = `Score: ${score}`;
+      inputEl.disabled = true;
+      nextButton.disabled = false; // allow next after timeout
+      speak(`Time's up! The correct word was ${dinosaurs[currentDinoIndex]}`);
+    }
+  }, 1000);
+}
+
+function showDino() {
+  if(currentDinoIndex >= dinosaurs.length){
+    clearInterval(wordTimerInterval);
+    feedbackEl.textContent = `🎉 Finished! Your score: ${score}`;
+    inputEl.style.display = 'none';
+    nextButton.style.display = 'none';
+    return;
+  }
+
+  inputEl.value = '';
+  inputEl.disabled = false;
+  feedbackEl.textContent = '';
+  nextButton.disabled = true; // disable next until correct
+  speak(dinosaurs[currentDinoIndex]);
+  startWordTimer();
+}
+
+function checkAnswer() {
+  const answer = inputEl.value.trim().toLowerCase();
+  const currentDino = dinosaurs[currentDinoIndex];
+
+  if(timer <= 0) return; // prevent checking after timeout
+
+  if(answer === currentDino) {
+    score += 10;
+    feedbackEl.textContent = "✅ Correct! Well done, John Jayzer!";
+    scoreEl.textContent = `Score: ${score}`;
+    clearInterval(wordTimerInterval);
+    inputEl.disabled = true;
+    nextButton.disabled = false; // enable next
+    speak("Correct! Well done, John Jayzer!");
+  } else {
+    score -= 2;
+    feedbackEl.textContent = "❌ Incorrect! Try again!";
+    scoreEl.textContent = `Score: ${score}`;
+    inputEl.value = '';
+    inputEl.focus();
+    // Speak feedback first, then repeat the word
+    speak("Incorrect! Try again!", () => {
+      speak(currentDino);
+    });
+  }
+}
+
+function revealAnswer() {
+  const currentDino = dinosaurs[currentDinoIndex];
+  feedbackEl.textContent = `💡 Answer: ${currentDino}`;
+  score -= 5;
+  scoreEl.textContent = `Score: ${score}`;
+  clearInterval(wordTimerInterval);
+  inputEl.disabled = true;
+  nextButton.disabled = false; // allow next
+  speak(`The answer is ${currentDino}`);
+}
+
+function repeatDino() {
+  if(currentDinoIndex < dinosaurs.length){
+    speak(dinosaurs[currentDinoIndex]);
+  }
+}
+
+function nextDino() {
+  currentDinoIndex++;
+  showDino();
+}
+
+// Start the first dinosaur
+showDino();
+
+</script>
+</body>
+</html>
